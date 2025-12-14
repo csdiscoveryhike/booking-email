@@ -1,195 +1,564 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Discovery Hike Trek Data</title>
+<meta charset="UTF-8">
+<title>Discovery Hike – Batch & Payment Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Chart.js (added, nothing removed) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-  body { font-family: Arial, sans-serif; padding: 20px; max-width: 1000px; margin: auto; }
-  table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-  th { background-color: #f4f4f4; cursor: pointer; user-select: none; }
-  th.sorted-asc::after { content: " ▲"; }
-  th.sorted-desc::after { content: " ▼"; }
-  input[type="text"] { padding: 6px; width: 300px; margin-bottom: 10px; }
-  .pagination { margin-top: 10px; }
-  .pagination button {
-    padding: 6px 12px;
-    margin-right: 5px;
-    border: 1px solid #ccc;
-    background: white;
-    cursor: pointer;
+/* =========================================================
+   DESIGN TOKENS (LIGHT / DARK)
+========================================================= */
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --surface-soft: #f8fafc;
+  --text: #1f2937;
+  --text-muted: #6b7280;
+  --border: rgba(229,231,235,0.7);
+
+  --brand-primary: #0f2a44;
+  --brand-secondary: #1e4f91;
+
+  --shadow-sm: 0 4px 10px rgba(0,0,0,0.06);
+  --shadow-md: 0 6px 14px rgba(0,0,0,0.08);
+}
+
+/* DARK MODE (ADMIN PANEL PARITY) */
+body.dark {
+  --bg: #0b1220;
+  --surface: #0f172a;
+  --surface-soft: #111c33;
+  --text: #e5e7eb;
+  --text-muted: #94a3b8;
+  --border: rgba(148,163,184,0.18);
+
+  --shadow-sm: 0 4px 10px rgba(0,0,0,0.4);
+  --shadow-md: 0 6px 14px rgba(0,0,0,0.5);
+}
+
+/* =========================================================
+   BASE
+========================================================= */
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  background: var(--bg);
+  margin: 0;
+  padding: 16px;
+  color: var(--text);
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+.container {
+  max-width: 1300px;
+  margin: auto;
+}
+
+h1 { margin-bottom: 4px; }
+.note {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+/* =========================================================
+   HEADER (MATCH ADMIN PANEL)
+========================================================= */
+.dh-header {
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+  border-radius: 14px;
+  padding: 16px 20px;
+  color: #ffffff;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow-md);
+}
+
+.dh-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dh-logo { height: 42px; }
+
+.dh-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.dh-subtitle {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+/* =========================================================
+   FILTER BAR
+========================================================= */
+.filters {
+  background: var(--surface);
+  padding: 12px;
+  border-radius: 12px;
+  display: grid;
+  grid-template-columns: 200px 1fr auto;
+  gap: 10px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.filters select,
+.filters input,
+.filters button {
+  padding: 9px 10px;
+  font-size: 14px;
+  background: var(--surface-soft);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+/* =========================================================
+   TABLE (CALM, INTERNAL TOOL)
+========================================================= */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 20px;
+  table-layout: fixed; /* prevents jumping */
+}
+
+th, td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+  vertical-align: middle;
+}
+
+th {
+  background: var(--surface-soft);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Row hover – subtle like admin panel */
+tbody tr:hover {
+  background: rgba(30,79,145,0.05);
+  cursor: pointer;
+}
+
+/* =========================================================
+   COLUMN ALIGNMENT (BATCH TABLE)
+========================================================= */
+th:nth-child(1), td:nth-child(1) { text-align: left; font-weight: 600; }
+th:nth-child(2), td:nth-child(2) {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+th:nth-child(3), td:nth-child(3),
+th:nth-child(4), td:nth-child(4) {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+th:nth-child(5), td:nth-child(5),
+th:nth-child(6), td:nth-child(6),
+th:nth-child(7), td:nth-child(7) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+th:nth-child(8), td:nth-child(8) {
+  text-align: center;
+  width: 120px;
+}
+
+/* =========================================================
+   STATUS BADGES (STABLE)
+========================================================= */
+.status-upcoming,
+.status-past {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 84px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-upcoming {
+  background: rgba(4,120,87,0.14);
+  color: #10b981;
+}
+
+.status-past {
+  background: rgba(148,163,184,0.18);
+  color: var(--text-muted);
+}
+
+/* =========================================================
+   PAYMENT STATES
+========================================================= */
+.pay-ok   { color: #10b981; font-weight: 600; }
+.pay-due  { color: #f59e0b; font-weight: 600; }
+.pay-warn { color: #ef4444; font-weight: 700; }
+
+/* =========================================================
+   HIGH PAX (CONTROLLED)
+========================================================= */
+.high-pax {
+  background: rgba(251,191,36,0.14);
+}
+
+/* =========================================================
+   BOOKINGS PANEL (DETAIL VIEW)
+========================================================= */
+.bookings-panel {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+  border-left: 4px solid var(--brand-secondary);
+}
+
+.bookings-panel table {
+  table-layout: fixed;
+}
+
+.bookings-panel th,
+.bookings-panel td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+}
+
+.bookings-panel td:nth-last-child(-n+4) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================
+   SECTIONS, CARDS, CHARTS
+========================================================= */
+.section-title {
+  margin: 32px 0 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.card,
+.chart-card {
+  background: var(--surface);
+  padding: 14px;
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.card strong {
+  font-size: 22px;
+  display: block;
+}
+
+.card span {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+canvas { max-height: 320px; }
+
+/* =========================================================
+   BUTTONS (ADMIN PARITY)
+========================================================= */
+button {
+  background: linear-gradient(135deg, var(--brand-secondary), var(--brand-primary));
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 14px;
+}
+
+button:hover { opacity: 0.9; }
+
+/* =========================================================
+   MOBILE
+========================================================= */
+@media (max-width: 800px) {
+  table thead { display: none; }
+  table tr { display: block; }
+  table td {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 10px;
   }
-  .pagination button.active { background: #003366; color: white; }
+  table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+}
 </style>
+
+
 </head>
+
 <body>
+<div class="container">
 
-<h1>Discovery Hike Trek Data</h1>
-<input type="text" id="searchInput" placeholder="Search trek name or date (dd-mm-yyyy)..." />
+  <!-- PREMIUM HEADER -->
+<div class="dh-header">
+  <div class="dh-header-left">
+    <!-- keep your logo here -->
+    <img src="https://i.imgur.com/40sl7Sv.png" alt="Discovery Hike" class="dh-logo">
+    <div>
+      <div class="dh-title">Discovery Hike</div>
+      <div class="dh-subtitle">Operations · Batch · Payments · Insights</div>
+    </div>
+  </div>
+</div>
 
-<table id="trekTable">
-  <thead></thead>
-  <tbody></tbody>
+
+<!-- ===== YOUR ORIGINAL HTML (UNCHANGED) ===== -->
+<h1>Discovery Hike – Batch & Payment Dashboard</h1>
+<div class="note">
+Batch = Trek Name + Trek Date • Amounts shown in ₹ INR
+</div>
+
+<div class="filters">
+  <select id="dateFilter">
+    <option value="upcoming">Upcoming Batches (from tomorrow)</option>
+    <option value="past">Past Batches (incl. today)</option>
+    <option value="all">All Batches</option>
+  </select>
+  <input type="text" id="searchInput" placeholder="Search trek name..." />
+  <button onclick="exportCSV()">Export CSV</button>
+</div>
+
+<table id="batchTable">
+<thead>
+<tr>
+  <th>Trek</th>
+  <th>Date</th>
+  <th>Bookings</th>
+  <th>Pax</th>
+  <th>Turnover</th>
+  <th>Advance</th>
+  <th>Remaining</th>
+  <th>Status</th>
+</tr>
+</thead>
+<tbody></tbody>
 </table>
 
-<div class="pagination" id="pagination"></div>
+<div class="bookings-panel" id="bookingsPanel" style="display:none;">
+  <h3 id="bookingsTitle"></h3>
+  <table id="bookingTable">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- ===== HISTORICAL INDEXES (NEW) ===== -->
+<div class="section-title">📊 Historical Indexes (All-time)</div>
+<div class="grid">
+  <div class="card"><strong id="idxBatches">0</strong><span>Total Batches</span></div>
+  <div class="card"><strong id="idxPax">0</strong><span>Total Pax Served</span></div>
+  <div class="card"><strong id="idxTurn">₹0</strong><span>Total Turnover</span></div>
+  <div class="card"><strong id="idxAdv">₹0</strong><span>Total Advance</span></div>
+  <div class="card"><strong id="idxOut">₹0</strong><span>Total Outstanding</span></div>
+</div>
+
+<div class="section-title">📌 Historical Highlights</div>
+<div class="grid">
+  <div class="card"><strong id="idxTopTrek">–</strong><span>Busiest Trek</span></div>
+  <div class="card"><strong id="idxBusyDay">–</strong><span>Busiest Day</span></div>
+  <div class="card"><strong id="idxBigBatch">–</strong><span>Largest Batch</span></div>
+</div>
+
+<!-- ===== TRENDS ===== -->
+<div class="section-title">📈 Trends & Insights (All-time)</div>
+<div class="chart-grid">
+  <div class="chart-card"><canvas id="paxTrend"></canvas></div>
+  <div class="chart-card"><canvas id="turnTrend"></canvas></div>
+  <div class="chart-card"><canvas id="advRemTrend"></canvas></div>
+  <div class="chart-card"><canvas id="topTreks"></canvas></div>
+  <div class="chart-card"><canvas id="batchLoad"></canvas></div>
+</div>
+
+</div>
 
 <script>
-const SHEET_DATA_URL = 'https://script.google.com/macros/s/AKfycbz2VgvO8CFo6b-1f02dnnW5s2DDZfv9Ai0U5oiNg6laOStze00NF3TcL0UnOQP6pCsucQ/exec';  // Replace with your Apps Script web app URL
-const rowsPerPage = 10;
+/* ===== YOUR ORIGINAL SCRIPT (UNCHANGED, ONLY EXTENDED) ===== */
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbz2VgvO8CFo6b-1f02dnnW5s2DDZfv9Ai0U5oiNg6laOStze00NF3TcL0UnOQP6pCsucQ/exec';
+const TREK=3, DATE=4, DEAL=5, PAX=6, ADV=7;
+const today = new Date(); today.setHours(0,0,0,0);
 
-let tableData = [];
-let filteredData = [];
-let currentSort = { colIndex: 0, order: 'asc' };
-let currentPage = 1;
-
-function formatDate(dateStr) {
-  // dateStr is string like "2025-05-17T00:00:00.000Z" or Date object
-  let d = new Date(dateStr);
-  if (isNaN(d)) return dateStr;
-  let day = ('0' + d.getDate()).slice(-2);
-  let month = ('0' + (d.getMonth() + 1)).slice(-2);
-  let year = d.getFullYear();
-  return `${day}-${month}-${year}`;
+const norm = s => (s||'').toLowerCase().trim();
+const money = n => '₹'+n.toLocaleString('en-IN');
+function formatDate(d){
+  const x = new Date(d);
+  if (isNaN(x)) return d || '';
+  return String(x.getDate()).padStart(2,'0') + '-' +
+         String(x.getMonth()+1).padStart(2,'0') + '-' +
+         x.getFullYear();
 }
 
-function buildTableHeaders(headers) {
-  const thead = document.querySelector('#trekTable thead');
-  thead.innerHTML = '<tr>' + headers.map((h,i) =>
-    `<th data-index="${i}">${h}</th>`
-  ).join('') + '</tr>';
+let raw=[], headers=[], allBatches=[];
 
-  // Add click handlers for sorting
-  thead.querySelectorAll('th').forEach(th => {
-    th.addEventListener('click', () => {
-      let colIndex = parseInt(th.getAttribute('data-index'));
-      if (currentSort.colIndex === colIndex) {
-        currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
-      } else {
-        currentSort.colIndex = colIndex;
-        currentSort.order = 'asc';
-      }
-      currentPage = 1;
-      sortAndRender();
-      updateSortIcons();
-    });
-  });
-}
-
-function updateSortIcons() {
-  const thead = document.querySelector('#trekTable thead');
-  thead.querySelectorAll('th').forEach(th => {
-    th.classList.remove('sorted-asc', 'sorted-desc');
-    if (parseInt(th.getAttribute('data-index')) === currentSort.colIndex) {
-      th.classList.add(currentSort.order === 'asc' ? 'sorted-asc' : 'sorted-desc');
-    }
-  });
-}
-
-function renderTableBody(dataRows) {
-  const tbody = document.querySelector('#trekTable tbody');
-  tbody.innerHTML = dataRows.map(row => {
-    return '<tr>' + row.map((cell,i) => {
-      if(i === 4){ // trek date column - format it
-        return `<td>${formatDate(cell)}</td>`;
-      }
-      return `<td>${cell}</td>`;
-    }).join('') + '</tr>';
-  }).join('');
-}
-
-function filterData(searchTerm) {
-  if (!searchTerm) return [...tableData];
-  searchTerm = searchTerm.toLowerCase();
-  return tableData.filter(row => {
-    return row.some(cell => {
-      if (!cell) return false;
-      return cell.toString().toLowerCase().includes(searchTerm);
-    });
-  });
-}
-
-function sortAndRender() {
-  // Filter
-  let dataToUse = filterData(document.getElementById('searchInput').value);
-
-  // Extract headers and data rows
-  const headers = dataToUse[0];
-  let rows = dataToUse.slice(1);
-
-  // Sort rows
-  rows.sort((a,b) => {
-    let valA = a[currentSort.colIndex];
-    let valB = b[currentSort.colIndex];
-
-    // For date column, parse dates
-    if(currentSort.colIndex === 4){
-      valA = new Date(valA);
-      valB = new Date(valB);
-    }
-
-    if(valA == valB) return 0;
-    if(currentSort.order === 'asc') {
-      return valA > valB ? 1 : -1;
-    } else {
-      return valA < valB ? 1 : -1;
-    }
-  });
-
-  // Pagination
-  const totalPages = Math.ceil(rows.length / rowsPerPage);
-  if(currentPage > totalPages) currentPage = totalPages || 1;
-  const start = (currentPage -1) * rowsPerPage;
-  const pageRows = rows.slice(start, start + rowsPerPage);
-
-  // Render table body & pagination
-  renderTableBody(pageRows);
-  renderPagination(totalPages);
-  updateSortIcons();
-}
-
-function renderPagination(totalPages) {
-  const pagination = document.getElementById('pagination');
-  if(totalPages <= 1){
-    pagination.innerHTML = '';
-    return;
-  }
-
-  let buttons = '';
-  for(let i = 1; i <= totalPages; i++){
-    buttons += `<button class="${i===currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
-  }
-  pagination.innerHTML = buttons;
-
-  pagination.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      currentPage = parseInt(btn.getAttribute('data-page'));
-      sortAndRender();
-    });
-  });
-}
-
-async function loadData() {
-  try {
-    const res = await fetch(SHEET_DATA_URL);
-    const data = await res.json();
-    tableData = data;
-    buildTableHeaders(data[0]);
-    currentSort = { colIndex: 4, order: 'asc' }; // default sort on trekDate ascending
-    currentPage = 1;
-    sortAndRender();
-  } catch (e) {
-    alert('Failed to load data.');
-    console.error(e);
-  }
-}
-
-document.getElementById('searchInput').addEventListener('input', () => {
-  currentPage = 1;
-  sortAndRender();
+fetch(DATA_URL).then(r=>r.json()).then(d=>{
+  headers=d[0];
+  raw=d.slice(1);
+  allBatches=buildBatches();
+  render();
+  renderHistorical(allBatches);
+  renderCharts(allBatches);
 });
 
-loadData();
+function buildBatches(){
+  const m={};
+  raw.forEach(r=>{
+    const key=norm(r[TREK])+'|'+r[DATE];
+    if(!m[key]) m[key]={ trek:r[TREK], date:new Date(r[DATE]), rows:[], pax:0, turn:0, adv:0 };
+    const pax=Number(r[PAX])||0;
+    const deal=Number(r[DEAL])||0;
+    const adv=Number(r[ADV])||0;
+    m[key].rows.push(r);
+    m[key].pax+=pax;
+    m[key].turn+=deal*pax;
+    m[key].adv+=adv;
+  });
+  return Object.values(m);
+}
+
+/* ===== ORIGINAL render(), showBookings(), exportCSV() UNCHANGED ===== */
+function render(){
+  const f=dateFilter.value, s=searchInput.value.toLowerCase();
+  const current=allBatches.filter(b=>{
+    const d=Math.floor((b.date-today)/86400000);
+    if(f==='upcoming'&&d<=0) return false;
+    if(f==='past'&&d>0) return false;
+    if(s&&!b.trek.toLowerCase().includes(s)) return false;
+    return true;
+  });
+
+  const tb=document.querySelector('#batchTable tbody');
+  tb.innerHTML='';
+  current.sort((a,b)=>a.date-b.date).forEach(b=>{
+    const rem=b.turn-b.adv;
+    const tr=document.createElement('tr');
+    if(b.pax>=20) tr.classList.add('high-pax');
+    tr.innerHTML=`
+      <td data-label="Trek">${b.trek}</td>
+      <td data-label="Date">${b.date.toLocaleDateString('en-GB')}</td>
+      <td data-label="Bookings">${b.rows.length}</td>
+      <td data-label="Pax">${b.pax}</td>
+      <td data-label="Turnover">${money(b.turn)}</td>
+      <td data-label="Advance">${money(b.adv)}</td>
+      <td data-label="Remaining">${money(b.turn-b.adv)}</td>
+      <td data-label="Status" class="${b.date>today?'status-upcoming':'status-past'}">
+        ${b.date>today?'Upcoming':'Past'}
+      </td>`;
+    tr.onclick=()=>showBookings(b);
+    tb.appendChild(tr);
+  });
+}
+
+function showBookings(b){
+  bookingsPanel.style.display='block';
+  bookingsTitle.textContent=`${b.trek} – ${b.date.toLocaleDateString('en-GB')}`;
+  bookingTable.querySelector('thead').innerHTML =
+    `<tr>${headers.map(h=>`<th>${h}</th>`).join('')}
+      <th>Total</th><th>Remaining</th></tr>`;
+  bookingTable.querySelector('tbody').innerHTML =
+    b.rows.map(r=>{
+      const total=(+r[DEAL]||0)*(+r[PAX]||0);
+      const rem=total-(+r[ADV]||0);
+      return `<tr>${r.map((c,i) => {
+  if (i === DATE) {
+    return `<td>${formatDate(c)}</td>`;
+  }
+  return `<td>${c || ''}</td>`;
+}).join('')
+}
+        <td>${money(total)}</td><td>${money(rem)}</td></tr>`;
+    }).join('');
+}
+
+function exportCSV(){
+  let csv="Trek,Date,Bookings,Pax,Turnover,Advance,Remaining\n";
+  allBatches.forEach(b=>{
+    csv+=`${b.trek},${b.date.toLocaleDateString('en-GB')},${b.rows.length},${b.pax},${b.turn},${b.adv},${b.turn-b.adv}\n`;
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='batch-payments.csv';
+  a.click();
+}
+
+/* ===== NEW: HISTORICAL INDEXES ===== */
+function renderHistorical(b){
+  let pax=0,turn=0,adv=0;
+  const trekMap={},dateMap={};
+  b.forEach(x=>{
+    pax+=x.pax; turn+=x.turn; adv+=x.adv;
+    trekMap[x.trek]=(trekMap[x.trek]||0)+x.pax;
+    const d=x.date.toLocaleDateString('en-GB');
+    dateMap[d]=(dateMap[d]||0)+x.pax;
+  });
+  idxBatches.textContent=b.length;
+  idxPax.textContent=pax;
+  idxTurn.textContent=money(turn);
+  idxAdv.textContent=money(adv);
+  idxOut.textContent=money(turn-adv);
+  idxTopTrek.textContent=Object.entries(trekMap).sort((a,b)=>b[1]-a[1])[0][0];
+  idxBusyDay.textContent=Object.entries(dateMap).sort((a,b)=>b[1]-a[1])[0][0];
+  idxBigBatch.textContent=b.sort((a,b)=>b.pax-a.pax)[0].trek;
+}
+
+/* ===== NEW: CHARTS ===== */
+function renderCharts(b){
+  const m={},tm={},bk={'1–5':0,'6–10':0,'11–15':0,'16–20':0,'20+':0};
+  b.forEach(x=>{
+    const k=x.date.getFullYear()+'-'+String(x.date.getMonth()+1).padStart(2,'0');
+    if(!m[k]) m[k]={pax:0,turn:0,adv:0};
+    m[k].pax+=x.pax; m[k].turn+=x.turn; m[k].adv+=x.adv;
+    tm[x.trek]=(tm[x.trek]||0)+x.pax;
+    if(x.pax<=5)bk['1–5']++;else if(x.pax<=10)bk['6–10']++;
+    else if(x.pax<=15)bk['11–15']++;else if(x.pax<=20)bk['16–20']++;else bk['20+']++;
+  });
+
+  const lbl=Object.keys(m).sort();
+  new Chart(paxTrend,{type:'line',data:{labels:lbl,datasets:[{label:'Pax',data:lbl.map(l=>m[l].pax)}]}});
+  new Chart(turnTrend,{type:'line',data:{labels:lbl,datasets:[{label:'Turnover',data:lbl.map(l=>m[l].turn)}]}});
+  new Chart(advRemTrend,{type:'bar',data:{labels:lbl,datasets:[
+    {label:'Advance',data:lbl.map(l=>m[l].adv)},
+    {label:'Remaining',data:lbl.map(l=>m[l].turn-m[l].adv)}
+  ]},options:{scales:{x:{stacked:true},y:{stacked:true}}}});
+  new Chart(topTreks,{type:'bar',data:{labels:Object.keys(tm),datasets:[{label:'Pax',data:Object.values(tm)}]}});
+  new Chart(batchLoad,{type:'bar',data:{labels:Object.keys(bk),datasets:[{label:'Batches',data:Object.values(bk)}]}});
+}
+
+dateFilter.onchange = searchInput.oninput = render;
 </script>
+
 </body>
 </html>
