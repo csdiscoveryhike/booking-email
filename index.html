@@ -283,6 +283,23 @@ th:nth-child(8), td:nth-child(8) {
   font-size: 13px;
   color: var(--text-muted);
 }
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+}
+.chart-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.chart-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
 
 canvas { max-height: 320px; }
 
@@ -338,11 +355,6 @@ button:hover { opacity: 0.9; }
 
 
 <!-- ===== YOUR ORIGINAL HTML (UNCHANGED) ===== -->
-<h1>Discovery Hike – Batch & Payment Dashboard</h1>
-<div class="note">
-Batch = Trek Name + Trek Date • Amounts shown in ₹ INR
-</div>
-
 <div class="filters">
   <select id="dateFilter">
     <option value="upcoming">Upcoming Batches (from tomorrow)</option>
@@ -397,12 +409,54 @@ Batch = Trek Name + Trek Date • Amounts shown in ₹ INR
 <!-- ===== TRENDS ===== -->
 <div class="section-title">📈 Trends & Insights (All-time)</div>
 <div class="chart-grid">
-  <div class="chart-card"><canvas id="paxTrend"></canvas></div>
-  <div class="chart-card"><canvas id="turnTrend"></canvas></div>
-  <div class="chart-card"><canvas id="advRemTrend"></canvas></div>
-  <div class="chart-card"><canvas id="topTreks"></canvas></div>
-  <div class="chart-card"><canvas id="batchLoad"></canvas></div>
+
+  <div class="chart-card">
+    <div class="chart-title">Monthly Pax Trend</div>
+    <div class="chart-desc">
+      Shows how many participants joined across all batches month-by-month.
+      Useful to understand seasonal demand and growth.
+    </div>
+    <canvas id="paxTrend"></canvas>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Monthly Turnover Trend</div>
+    <div class="chart-desc">
+      Total revenue generated per month from all treks.
+      Helps track business performance over time.
+    </div>
+    <canvas id="turnTrend"></canvas>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Advance vs Remaining Payments</div>
+    <div class="chart-desc">
+      Comparison of money already collected versus outstanding balance,
+      stacked month-wise for cash-flow clarity.
+    </div>
+    <canvas id="advRemTrend"></canvas>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Top Treks by Participation</div>
+    <div class="chart-desc">
+      Highlights treks that attracted the highest number of participants
+      across all time.
+    </div>
+    <canvas id="topTreks"></canvas>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Batch Size Distribution</div>
+    <div class="chart-desc">
+      Number of batches grouped by pax size. Useful to understand
+      operational load and planning patterns.
+    </div>
+    <canvas id="batchLoad"></canvas>
+  </div>
+
 </div>
+
 
 </div>
 
